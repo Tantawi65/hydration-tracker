@@ -1,0 +1,97 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}Profile Setup - Hydration Calculator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-cog text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="card-title mt-2">Complete Your Profile</h3>
+                    <p class="text-muted">Help us calculate your personalized hydration goals</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.weight.id_for_label }}" class="form-label">
+                                <i class="fas fa-weight"></i> Weight (kg)
+                            </label>
+                            {{ form.weight }}
+                            {% if form.weight.errors %}
+                                <div class="text-danger small">{{ form.weight.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.age.id_for_label }}" class="form-label">
+                                <i class="fas fa-birthday-cake"></i> Age
+                            </label>
+                            {{ form.age }}
+                            {% if form.age.errors %}
+                                <div class="text-danger small">{{ form.age.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.activity_level.id_for_label }}" class="form-label">
+                            <i class="fas fa-running"></i> Activity Level
+                        </label>
+                        {{ form.activity_level }}
+                        {% if form.activity_level.errors %}
+                            <div class="text-danger small">{{ form.activity_level.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.weather_condition.id_for_label }}" class="form-label">
+                                <i class="fas fa-sun"></i> Weather Condition
+                            </label>
+                            {{ form.weather_condition }}
+                            {% if form.weather_condition.errors %}
+                                <div class="text-danger small">{{ form.weather_condition.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.glass_volume.id_for_label }}" class="form-label">
+                                <i class="fas fa-glass-water"></i> Glass Volume (ml)
+                            </label>
+                            {{ form.glass_volume }}
+                            {% if form.glass_volume.errors %}
+                                <div class="text-danger small">{{ form.glass_volume.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.custom_daily_goal.id_for_label }}" class="form-label">
+                            <i class="fas fa-target"></i> Custom Daily Goal (ml) - Optional
+                        </label>
+                        {{ form.custom_daily_goal }}
+                        <div class="form-text">Leave empty to use our calculated recommendation</div>
+                        {% if form.custom_daily_goal.errors %}
+                            <div class="text-danger small">{{ form.custom_daily_goal.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Complete Setup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

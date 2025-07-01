@@ -1,0 +1,202 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}Challenges - Hydration Calculator{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2><i class="fas fa-trophy"></i> Water Challenges</h2>
+        <p class="text-muted">Join challenges to stay motivated and compete with others!</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{% url 'create_challenge' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Challenge
+        </a>
+    </div>
+</div>
+
+<!-- Water Tip Card -->
+{% if random_tip %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="{{ random_tip.icon }} text-info" style="font-size: 2rem;"></i>
+                    </div>
+                    <div>
+                        <h6 class="card-title mb-1">💡 Hydration Tip</h6>
+                        <p class="card-text mb-0">{{ random_tip.content }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Active Challenges -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4><i class="fas fa-fire"></i> Active Challenges</h4>
+        {% if active_challenges %}
+            <div class="row">
+                {% for challenge in active_challenges %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-trophy"></i> {{ challenge.name }}
+                                    <span class="badge bg-light text-dark ms-2">Active</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ challenge.description|truncatewords:15 }}</p>
+                                <div class="challenge-stats">
+                                    <small class="text-muted">
+                                        <i class="fas fa-target"></i> {{ challenge.goal_per_day }}ml/day<br>
+                                        <i class="fas fa-users"></i> {{ challenge.participant_count }} participants<br>
+                                        <i class="fas fa-calendar"></i> {{ challenge.start_date }} - {{ challenge.end_date }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-grid gap-2">
+                                    {% if challenge in user_challenges %}
+                                        <a href="{% url 'challenge_detail' challenge.id %}" class="btn btn-outline-success">
+                                            <i class="fas fa-eye"></i> View Progress
+                                        </a>
+                                        <a href="{% url 'leaderboard' challenge.id %}" class="btn btn-success">
+                                            <i class="fas fa-medal"></i> Leaderboard
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'challenge_detail' challenge.id %}" class="btn btn-success">
+                                            <i class="fas fa-play"></i> Join Challenge
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-trophy text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No active challenges</h5>
+                <p class="text-muted">Be the first to create a challenge!</p>
+                <a href="{% url 'create_challenge' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create First Challenge
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upcoming Challenges -->
+{% if upcoming_challenges %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4><i class="fas fa-clock"></i> Upcoming Challenges</h4>
+        <div class="row">
+            {% for challenge in upcoming_challenges %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-clock"></i> {{ challenge.name }}
+                                <span class="badge bg-light text-dark ms-2">Upcoming</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ challenge.description|truncatewords:15 }}</p>
+                            <div class="challenge-stats">
+                                <small class="text-muted">
+                                    <i class="fas fa-target"></i> {{ challenge.goal_per_day }}ml/day<br>
+                                    <i class="fas fa-calendar"></i> Starts {{ challenge.start_date }}<br>
+                                    <i class="fas fa-hourglass-half"></i> {{ challenge.duration_days }} days
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'challenge_detail' challenge.id %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- My Challenges -->
+{% if user_challenges %}
+<div class="row">
+    <div class="col-12">
+        <h4><i class="fas fa-user"></i> My Challenges</h4>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Challenge</th>
+                        <th>Progress</th>
+                        <th>Days Completed</th>
+                        <th>Current Streak</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participation in user_challenges %}
+                        <tr>
+                            <td>
+                                <strong>{{ participation.challenge.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ participation.challenge.goal_per_day }}ml/day</small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" 
+                                         role="progressbar" 
+                                         style="width: {{ participation.completion_percentage }}%">
+                                        {{ participation.completion_percentage }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    {{ participation.total_days_completed }}/{{ participation.challenge.duration_days }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if participation.current_streak > 0 %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-fire"></i> {{ participation.current_streak }} days
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No streak</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'challenge_detail' participation.challenge.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'leaderboard' participation.challenge.id %}" 
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-medal"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}History - Hydration Calculator{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-line"></i> Hydration History</h2>
+        <p class="text-muted">Track your progress over time</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-fire text-warning" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ current_streak }}</h5>
+                <p class="card-text">Current Streak</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-trophy text-success" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ max_streak }}</h5>
+                <p class="card-text">Best Streak</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-target text-primary" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ goals_met }}</h5>
+                <p class="card-text">Goals Met</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-tint text-info" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ total_consumed|floatformat:0 }}L</h5>
+                <p class="card-text">Total Consumed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-area"></i> Daily Consumption (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="hydrationChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Summary Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar"></i> Daily Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if summaries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Consumed</th>
+                                    <th>Goal</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in summaries %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ summary.date|date:"M d, Y" }}</strong>
+                                            {% if summary.date == today %}
+                                                <span class="badge bg-primary ms-1">Today</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ summary.total_consumed }}ml</td>
+                                        <td>{{ summary.goal_amount }}ml</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar {% if summary.is_goal_reached %}bg-success{% else %}bg-primary{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ summary.progress_percentage }}%">
+                                                    {{ summary.progress_percentage }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if summary.is_goal_reached %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Goal Met
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-exclamation"></i> {{ summary.goal_amount|add:summary.total_consumed|add:"-"|add:summary.total_consumed }}ml short
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No data available</h5>
+                        <p class="text-muted">Start logging your water intake to see your history!</p>
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-tint"></i> Start Logging
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Achievements Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-medal"></i> Achievements</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement-card text-center p-3 {% if current_streak >= 3 %}bg-light border-success{% else %}bg-light{% endif %}">
+                            <i class="fas fa-fire {% if current_streak >= 3 %}text-success{% else %}text-muted{% endif %}" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">3-Day Streak</h6>
+                            <p class="small text-muted">
+                                {% if current_streak >= 3 %}
+                                    <i class="fas fa-check text-success"></i> Achieved!
+                                {% else %}
+                                    Need {{ 3|add:current_streak|add:"-"|add:current_streak }} more days
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement-card text-center p-3 {% if current_streak >= 7 %}bg-light border-success{% else %}bg-light{% endif %}">
+                            <i class="fas fa-trophy {% if current_streak >= 7 %}text-success{% else %}text-muted{% endif %}" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Week Warrior</h6>
+                            <p class="small text-muted">
+                                {% if current_streak >= 7 %}
+                                    <i class="fas fa-check text-success"></i> Achieved!
+                                {% else %}
+                                    Need {{ 7|add:current_streak|add:"-"|add:current_streak }} more days
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="achievement-card text-center p-3 {% if goals_met >= 10 %}bg-light border-success{% else %}bg-light{% endif %}">
+                            <i class="fas fa-star {% if goals_met >= 10 %}text-success{% else %}text-muted{% endif %}" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Goal Crusher</h6>
+                            <p class="small text-muted">
+                                {% if goals_met >= 10 %}
+                                    <i class="fas fa-check text-success"></i> Achieved!
+                                {% else %}
+                                    {{ goals_met }}/10 goals met
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Chart.js configuration
+const ctx = document.getElementById('hydrationChart').getContext('2d');
+const chartData = {{ chart_data|safe }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: chartData.dates.map(date => {
+            const d = new Date(date);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }),
+        datasets: [{
+            label: 'Water Consumed (ml)',
+            data: chartData.consumed,
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            tension: 0.3,
+            fill: true
+        }, {
+            label: 'Daily Goal (ml)',
+            data: chartData.goals,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderDash: [5, 5],
+            tension: 0.3,
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Daily Hydration Progress'
+            },
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Amount (ml)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}{{ challenge.name }} - Challenges{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'challenges_list' %}">Challenges</a></li>
+                <li class="breadcrumb-item active">{{ challenge.name }}</li>
+            </ol>
+        </nav>
+        
+        <h2>
+            <i class="fas fa-trophy"></i> {{ challenge.name }}
+            {% if challenge.is_active %}
+                <span class="badge bg-success ms-2">Active</span>
+            {% elif challenge.is_upcoming %}
+                <span class="badge bg-warning ms-2">Upcoming</span>
+            {% else %}
+                <span class="badge bg-secondary ms-2">Finished</span>
+            {% endif %}
+        </h2>
+        <p class="text-muted">{{ challenge.description }}</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        {% if not is_participating and challenge.is_active or challenge.is_upcoming %}
+            <a href="{% url 'join_challenge' challenge.id %}" class="btn btn-success btn-lg">
+                <i class="fas fa-play"></i> Join Challenge
+            </a>
+        {% endif %}
+        {% if challenge.is_public %}
+            <a href="{% url 'leaderboard' challenge.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-medal"></i> Leaderboard
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Challenge Details -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Challenge Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="stat-card text-center p-3 bg-light rounded">
+                            <i class="fas fa-target text-primary" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Daily Goal</h6>
+                            <strong>{{ challenge.goal_per_day }}ml</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card text-center p-3 bg-light rounded">
+                            <i class="fas fa-calendar text-success" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Duration</h6>
+                            <strong>{{ challenge.duration_days }} days</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card text-center p-3 bg-light rounded">
+                            <i class="fas fa-users text-info" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Participants</h6>
+                            <strong>{{ challenge.participant_count }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card text-center p-3 bg-light rounded">
+                            <i class="fas fa-flag text-warning" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Type</h6>
+                            <strong>{{ challenge.get_challenge_type_display }}</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="challenge-dates">
+                    <p class="mb-2">
+                        <i class="fas fa-play-circle text-success"></i> 
+                        <strong>Start:</strong> {{ challenge.start_date|date:"M d, Y" }}
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-stop-circle text-danger"></i> 
+                        <strong>End:</strong> {{ challenge.end_date|date:"M d, Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if is_participating %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Your Progress</h5>
+            </div>
+            <div class="card-body">
+                <!-- Progress Ring -->
+                <div class="text-center mb-4">
+                    <div class="progress-ring">
+                        <svg class="progress-ring__svg" width="120" height="120">
+                            <circle class="progress-ring__circle-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="progress-ring__circle" cx="60" cy="60" r="50" 
+                                    style="stroke-dasharray: {{ participant.completion_percentage|floatformat:0 }}, 100"></circle>
+                        </svg>
+                        <div class="progress-ring__text">
+                            <span class="h4">{{ participant.completion_percentage }}%</span>
+                            <br>
+                            <small class="text-muted">Complete</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="progress-stat">
+                            <h5 class="text-primary">{{ participant.total_days_completed }}</h5>
+                            <small class="text-muted">Days Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="progress-stat">
+                            <h5 class="text-success">{{ participant.current_streak }}</h5>
+                            <small class="text-muted">Current Streak</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="progress-stat">
+                            <h5 class="text-warning">{{ participant.best_streak }}</h5>
+                            <small class="text-muted">Best Streak</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p class="mb-2">
+                        <strong>Total Water Logged:</strong> 
+                        <span class="text-info">{{ participant.total_water_logged|floatformat:0 }}ml</span>
+                    </p>
+                    {% if participant.rank %}
+                        <p class="mb-0">
+                            <strong>Your Rank:</strong> 
+                            <span class="badge bg-primary">#{{ participant.rank }}</span>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Challenge Tips -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Challenge Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="tip-card">
+                            <i class="fas fa-clock text-primary"></i>
+                            <h6>Set Reminders</h6>
+                            <p class="small text-muted">Set phone reminders every 2 hours to drink water consistently.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="tip-card">
+                            <i class="fas fa-trophy text-success"></i>
+                            <h6>Start Early</h6>
+                            <p class="small text-muted">Drink a glass first thing in the morning to get ahead of your goal.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="tip-card">
+                            <i class="fas fa-users text-info"></i>
+                            <h6>Challenge Friends</h6>
+                            <p class="small text-muted">Invite friends to join and motivate each other!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.progress-ring {
+    position: relative;
+    display: inline-block;
+}
+
+.progress-ring__svg {
+    transform: rotate(-90deg);
+}
+
+.progress-ring__circle-bg {
+    fill: none;
+    stroke: #e9ecef;
+    stroke-width: 8;
+}
+
+.progress-ring__circle {
+    fill: none;
+    stroke: #28a745;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+}
+
+.progress-ring__text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.tip-card {
+    text-align: center;
+    padding: 1rem;
+}
+
+.tip-card i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}Create Challenge - Hydration Calculator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-plus-circle text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="card-title mt-2">Create New Challenge</h3>
+                    <p class="text-muted">Design a challenge to motivate yourself and others!</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            <i class="fas fa-trophy"></i> Challenge Name
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        {{ form.description }}
+                        <div class="form-text">Describe the challenge and motivate participants</div>
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.challenge_type.id_for_label }}" class="form-label">
+                                <i class="fas fa-tags"></i> Challenge Type
+                            </label>
+                            {{ form.challenge_type }}
+                            {% if form.challenge_type.errors %}
+                                <div class="text-danger small">{{ form.challenge_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.goal_per_day.id_for_label }}" class="form-label">
+                                <i class="fas fa-target"></i> Daily Goal (ml)
+                            </label>
+                            {{ form.goal_per_day }}
+                            {% if form.goal_per_day.errors %}
+                                <div class="text-danger small">{{ form.goal_per_day.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                <i class="fas fa-play-circle"></i> Start Date
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="text-danger small">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                <i class="fas fa-stop-circle"></i> End Date
+                            </label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                                <div class="text-danger small">{{ form.end_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            {{ form.is_public }}
+                            <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                <i class="fas fa-globe"></i> Make this challenge public
+                            </label>
+                            <div class="form-text">Public challenges appear in the challenge list and have leaderboards</div>
+                        </div>
+                        {% if form.is_public.errors %}
+                            <div class="text-danger small">{{ form.is_public.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'challenges_list' %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Challenge
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Challenge Ideas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Challenge Ideas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="idea-card">
+                            <h6><i class="fas fa-calendar-week text-primary"></i> 7-Day Streak</h6>
+                            <p class="small text-muted">A week-long challenge to build consistent hydration habits.</p>
+                            <small><strong>Suggested goal:</strong> 2000-2500ml/day</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="idea-card">
+                            <h6><i class="fas fa-fire text-warning"></i> Summer Hydration</h6>
+                            <p class="small text-muted">Beat the heat with increased water intake during hot weather.</p>
+                            <small><strong>Suggested goal:</strong> 3000-3500ml/day</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="idea-card">
+                            <h6><i class="fas fa-dumbbell text-success"></i> Workout Buddy</h6>
+                            <p class="small text-muted">Extra hydration challenge for active individuals.</p>
+                            <small><strong>Suggested goal:</strong> 2500-3000ml/day</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-calculate end date based on challenge type
+document.getElementById('id_challenge_type').addEventListener('change', function() {
+    const startDateInput = document.getElementById('id_start_date');
+    const endDateInput = document.getElementById('id_end_date');
+    const goalInput = document.getElementById('id_goal_per_day');
+    
+    if (startDateInput.value) {
+        const startDate = new Date(startDateInput.value);
+        let endDate = new Date(startDate);
+        
+        switch(this.value) {
+            case 'daily':
+                endDate.setDate(startDate.getDate() + 1);
+                if (!goalInput.value) goalInput.value = '2000';
+                break;
+            case 'weekly':
+                endDate.setDate(startDate.getDate() + 7);
+                if (!goalInput.value) goalInput.value = '2500';
+                break;
+            case 'custom':
+                endDate.setDate(startDate.getDate() + 30);
+                if (!goalInput.value) goalInput.value = '2000';
+                break;
+        }
+        
+        endDateInput.value = endDate.toISOString().split('T')[0];
+    }
+});
+
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('id_start_date').min = today;
+    document.getElementById('id_end_date').min = today;
+});
+
+// Update end date minimum when start date changes
+document.getElementById('id_start_date').addEventListener('change', function() {
+    document.getElementById('id_end_date').min = this.value;
+});
+</script>
+{% endblock %}

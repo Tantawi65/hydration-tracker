@@ -1,0 +1,252 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}{{ challenge.name }} - Leaderboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'challenges_list' %}">Challenges</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'challenge_detail' challenge.id %}">{{ challenge.name }}</a></li>
+                <li class="breadcrumb-item active">Leaderboard</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-medal"></i> {{ challenge.name }} Leaderboard</h2>
+                <p class="text-muted">See how you rank against other participants!</p>
+            </div>
+            <div>
+                {% if user_participant %}
+                    <span class="badge bg-primary fs-6">Your Rank: #{{ user_participant.rank|default:"--" }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Challenge Summary -->
+<div class="row mb-4">
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users text-primary" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ participants.count }}</h5>
+                <p class="card-text">Participants</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-target text-success" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ challenge.goal_per_day }}ml</h5>
+                <p class="card-text">Daily Goal</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar text-info" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">{{ challenge.duration_days }}</h5>
+                <p class="card-text">Total Days</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-hourglass-half text-warning" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">
+                    {% if challenge.is_active %}
+                        {{ challenge.end_date|timeuntil }}
+                    {% elif challenge.is_upcoming %}
+                        {{ challenge.start_date|timeuntil }}
+                    {% else %}
+                        Finished
+                    {% endif %}
+                </h5>
+                <p class="card-text">
+                    {% if challenge.is_active %}
+                        Remaining
+                    {% elif challenge.is_upcoming %}
+                        To Start
+                    {% else %}
+                        Status
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaderboard -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-ranking-star"></i> Rankings</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if participants %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Participant</th>
+                                    <th>Days Completed</th>
+                                    <th>Total Water</th>
+                                    <th>Current Streak</th>
+                                    <th>Best Streak</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participant in participants %}
+                                    <tr {% if user_participant and participant.id == user_participant.id %}class="table-primary"{% endif %}>
+                                        <td>
+                                            {% if forloop.counter <= 3 %}
+                                                {% if forloop.counter == 1 %}
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-crown"></i> #1
+                                                    </span>
+                                                {% elif forloop.counter == 2 %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-medal"></i> #2
+                                                    </span>
+                                                {% elif forloop.counter == 3 %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-award"></i> #3
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">#{{ forloop.counter }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-2">
+                                                    {{ participant.user.first_name|first|default:participant.user.username|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ participant.user.first_name }} {{ participant.user.last_name|first|default:""|add:"." }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">@{{ participant.user.username|truncatechars:10 }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                {{ participant.total_days_completed }}/{{ challenge.duration_days }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ participant.total_water_logged|floatformat:0 }}ml</strong>
+                                        </td>
+                                        <td>
+                                            {% if participant.current_streak > 0 %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-fire"></i> {{ participant.current_streak }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-star"></i> {{ participant.best_streak }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px; min-width: 100px;">
+                                                <div class="progress-bar" 
+                                                     role="progressbar" 
+                                                     style="width: {{ participant.completion_percentage }}%">
+                                                    {{ participant.completion_percentage }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users-slash text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No participants yet</h5>
+                        <p class="text-muted">Be the first to join this challenge!</p>
+                        {% if not user_participant %}
+                            <a href="{% url 'join_challenge' challenge.id %}" class="btn btn-primary">
+                                <i class="fas fa-play"></i> Join Challenge
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legend -->
+{% if participants %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle"></i> Ranking System</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <small><strong>Primary:</strong> Days completed</small>
+                    </div>
+                    <div class="col-md-4">
+                        <small><strong>Secondary:</strong> Total water logged</small>
+                    </div>
+                    <div class="col-md-4">
+                        <small><strong>Tiebreaker:</strong> Best streak</small>
+                    </div>
+                </div>
+                {% if user_participant and user_participant.user.userprofile.is_public_profile %}
+                    <hr>
+                    <small class="text-muted">
+                        <i class="fas fa-eye"></i> Your profile is public and visible on leaderboards. 
+                        You can change this in <a href="{% url 'settings' %}">Settings</a>.
+                    </small>
+                {% elif user_participant %}
+                    <hr>
+                    <small class="text-warning">
+                        <i class="fas fa-eye-slash"></i> Your profile is private - you won't appear on public leaderboards. 
+                        You can change this in <a href="{% url 'settings' %}">Settings</a>.
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #28a745);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.table-primary td {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,1002 @@
+{% extends 'hydration/base.html' %}
+
+{% block title %}Dashboard - Hydration Calculator{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h2><i class="fas fa-tachometer-alt"></i> Your Hydration Dashboard</h2>
+            <p class="text-muted">Track your daily water intake and stay healthy!</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary" onclick="logWater({{ profile.glass_volume }})">
+                    <i class="fas fa-plus"></i> +1 Glass ({{ profile.glass_volume }}ml)
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="logWater(500)">
+                    <i class="fas fa-plus"></i> +500ml
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#customAmountModal">
+                    <i class="fas fa-edit"></i> Custom
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Today's Progress</h5>
+                
+                <!-- Water Bottle Visualization -->
+                <div class="water-bottle-container">
+                    <div class="water-bottle">
+                        <div class="water-fill" style="height: {{ progress_percentage }}%"></div>
+                        <div class="bottle-outline"></div>
+                        <div class="bottle-labels">
+                            <span class="progress-text">{{ progress_percentage }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: {{ progress_percentage }}%"
+                         id="progress-bar">
+                        {{ progress_percentage }}%
+                    </div>
+                </div>
+
+                <div class="hydration-stats">
+                    <h4 class="text-primary" id="consumed-amount">{{ today_consumption }}</h4>
+                    <p class="mb-1">of <span id="daily-goal">{{ daily_goal }}</span> ml consumed today</p>
+                    <p class="text-muted">
+                        {% if summary.is_goal_reached %}
+                            <i class="fas fa-check-circle text-success"></i> Goal achieved! Great job! 🎉
+                        {% else %}
+                            <i class="fas fa-target"></i> {{ daily_goal|add:today_consumption|add:"-"|add:today_consumption }} ml remaining
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-info-circle"></i> Quick Stats</h5>
+                
+                <div class="stat-item mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-glass-water"></i> Glass Size:</span>
+                        <strong>{{ profile.glass_volume }}ml</strong>
+                    </div>
+                </div>
+
+                <div class="stat-item mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-target"></i> Daily Goal:</span>
+                        <strong>{{ daily_goal }}ml</strong>
+                    </div>
+                </div>
+
+                <div class="stat-item mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-running"></i> Activity:</span>
+                        <strong>{{ profile.get_activity_level_display }}</strong>
+                    </div>
+                </div>
+
+                <div class="stat-item mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-thermometer-half"></i> Weather:</span>
+                        <strong>{{ profile.get_weather_condition_display }}</strong>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="d-grid">
+                    <a href="{% url 'settings' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-cog"></i> Update Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activity</h5>
+                <a href="{% url 'history' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-chart-line"></i> View Full History
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_logs %}
+                    <div class="activity-list">
+                        {% for log in recent_logs %}
+                            <div class="activity-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-tint text-primary"></i>
+                                        <strong>{{ log.amount }}ml</strong>
+                                        <span class="text-muted">logged</span>
+                                    </div>
+                                    <small class="text-muted">{{ log.timestamp|timesince }} ago</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No water logged yet today. Start by adding your first glass!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Amount Modal -->
+<div class="modal fade" id="customAmountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Custom Amount</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customAmountForm">
+                    <div class="mb-3">
+                        <label for="customAmount" class="form-label">Amount (ml)</label>
+                        <input type="number" class="form-control" id="customAmount" min="1" max="2000" placeholder="Enter amount in ml">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="logCustomAmount()">Log Water</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CoachBot Floating Widget -->
+<div id="coachbot-widget" class="coachbot-container">
+    <div class="coachbot-header" onclick="toggleCoachBot()">
+        <div class="coachbot-avatar">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="coachbot-info">
+            <span class="coachbot-name">CoachBot</span>
+            <span class="coachbot-status" id="coachbot-status">💧 Hydration Assistant</span>
+        </div>
+        <div class="coachbot-toggle">
+            <i class="fas fa-chevron-up" id="coachbot-toggle-icon"></i>
+        </div>
+    </div>
+    <div class="coachbot-body" id="coachbot-body">
+        <div class="coachbot-typing" id="coachbot-typing" style="display: none;">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <small class="text-muted">CoachBot is typing...</small>
+        </div>
+        <div class="coachbot-message" id="coachbot-message" style="display: none;">
+            <div class="message-content">
+                {{ coachbot.message }}
+            </div>
+            <div class="message-meta">
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> 
+                    <span id="message-time"></span>
+                    {% if coachbot.has_active_challenge %}
+                        <span class="badge bg-warning ms-2">
+                            <i class="fas fa-trophy"></i> Challenge Active
+                        </span>
+                    {% endif %}
+                    {% if coachbot.streak > 0 %}
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-fire"></i> {{ coachbot.streak }} day streak
+                        </span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    <button class="coachbot-close" onclick="minimizeCoachBot()" title="Minimize">
+        <i class="fas fa-minus"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function logWater(amount) {
+    fetch('{% url "log_water" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            'amount': amount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the UI
+            document.getElementById('consumed-amount').textContent = data.total_consumed;
+            document.getElementById('daily-goal').textContent = data.daily_goal;
+            
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = data.progress_percentage + '%';
+            progressBar.textContent = data.progress_percentage + '%';
+            
+            // Update water bottle fill
+            const waterFill = document.querySelector('.water-fill');
+            if (waterFill) {
+                waterFill.style.height = data.progress_percentage + '%';
+            }
+            
+            // Update progress text
+            const progressText = document.querySelector('.progress-text');
+            if (progressText) {
+                progressText.textContent = data.progress_percentage + '%';
+            }
+            
+            // Check for goal completion and show celebration
+            if (data.goal_completed) {
+                showCelebration('🎉 Daily Goal Achieved!', 'Congratulations! You\'ve reached your daily hydration goal!');
+            }
+            
+            // Check for challenge completions
+            if (data.challenge_completions && data.challenge_completions.length > 0) {
+                data.challenge_completions.forEach(challenge => {
+                    showCelebration(
+                        `🏆 Challenge Goal Met!`, 
+                        `You've completed today's goal for "${challenge.name}"!`
+                    );
+                });
+            }
+            
+            // Show success message
+            showToast('success', `Successfully logged ${amount}ml of water!`);
+            
+            // Refresh CoachBot message after logging water
+            setTimeout(() => {
+                refreshCoachBotMessage();
+            }, 1000);
+            
+            // Reload page to update recent activity after a short delay
+            setTimeout(() => location.reload(), 3000);
+        } else {
+            showToast('error', 'Error logging water: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Network error occurred');
+    });
+}
+
+function showCelebration(title, message) {
+    // Create celebration modal
+    const celebrationHTML = `
+        <div class="modal fade" id="celebrationModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-success">
+                    <div class="modal-body text-center p-4">
+                        <div class="celebration-animation mb-3">
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                        </div>
+                        <h3 class="text-success mb-3">${title}</h3>
+                        <p class="lead">${message}</p>
+                        <div class="celebration-emojis">
+                            <span class="celebration-emoji">🎉</span>
+                            <span class="celebration-emoji">💧</span>
+                            <span class="celebration-emoji">🏆</span>
+                            <span class="celebration-emoji">💪</span>
+                        </div>
+                        <button type="button" class="btn btn-success mt-3" data-bs-dismiss="modal">
+                            <i class="fas fa-thumbs-up"></i> Awesome!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing celebration modal
+    const existingModal = document.getElementById('celebrationModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal to body
+    document.body.insertAdjacentHTML('beforeend', celebrationHTML);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('celebrationModal'));
+    modal.show();
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        modal.hide();
+    }, 5000);
+}
+
+function logCustomAmount() {
+    const amount = document.getElementById('customAmount').value;
+    if (amount && amount > 0) {
+        logWater(parseInt(amount));
+        document.getElementById('customAmount').value = '';
+        bootstrap.Modal.getInstance(document.getElementById('customAmountModal')).hide();
+    } else {
+        showToast('error', 'Please enter a valid amount');
+    }
+}
+
+function showToast(type, message) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// Load random water tips
+function loadWaterTips() {
+    fetch('/api/water-tips/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.tips && data.tips.length > 0) {
+            showRandomTip(data.tips[0]);
+        }
+    })
+    .catch(error => console.log('Tips loading failed:', error));
+}
+
+function showRandomTip(tip) {
+    const tipHTML = `
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="${tip.icon} me-2" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">${tip.title}</h6>
+                    <p class="mb-0">${tip.content}</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.dashboard-header');
+    if (container) {
+        container.insertAdjacentHTML('afterend', tipHTML);
+    }
+}
+
+// Load tips when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Randomly show tip (30% chance)
+    if (Math.random() < 0.3) {
+        setTimeout(loadWaterTips, 2000);
+    }
+});
+
+// CoachBot widget functions
+function toggleCoachBot() {
+    const body = document.getElementById('coachbot-body');
+    const icon = document.getElementById('coachbot-toggle-icon');
+    const widget = document.getElementById('coachbot-widget');
+    
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        widget.classList.remove('minimized');
+        clearCoachBotNotification();
+        setTimeout(() => { scrollToBottom('coachbot-body'); }, 100);
+    } else {
+        body.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        widget.classList.add('minimized');
+    }
+}
+
+function minimizeCoachBot() {
+    const body = document.getElementById('coachbot-body');
+    const icon = document.getElementById('coachbot-toggle-icon');
+    const widget = document.getElementById('coachbot-widget');
+    
+    body.style.display = 'none';
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
+    widget.classList.add('minimized');
+}
+
+function scrollToBottom(elementId) {
+    const element = document.getElementById(elementId);
+    element.scrollTop = element.scrollHeight;
+}
+
+// Simulate CoachBot message loading
+function simulateCoachBotMessage() {
+    document.getElementById('coachbot-message').style.display = 'block';
+    document.getElementById('coachbot-typing').style.display = 'none';
+    
+    // Set current time
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('message-time').textContent = timeString;
+    
+    // Show notification
+    showCoachBotNotification();
+}
+
+function showCoachBotNotification() {
+    const widget = document.getElementById('coachbot-widget');
+    widget.classList.add('has-notification');
+    
+    // Auto-remove notification after 10 seconds
+    setTimeout(() => {
+        clearCoachBotNotification();
+    }, 10000);
+}
+
+function clearCoachBotNotification() {
+    const widget = document.getElementById('coachbot-widget');
+    widget.classList.remove('has-notification');
+}
+
+// Refresh CoachBot message
+function refreshCoachBotMessage() {
+    document.getElementById('coachbot-typing').style.display = 'block';
+    document.getElementById('coachbot-message').style.display = 'none';
+    
+    fetch('/api/coachbot-message/')
+        .then(response => response.json())
+        .then(data => {
+            setTimeout(() => {
+                document.getElementById('coachbot-typing').style.display = 'none';
+                document.getElementById('coachbot-message').style.display = 'block';
+                
+                // Update message content
+                document.getElementById('coachbot-message').querySelector('.message-content').textContent = data.message;
+                
+                // Update time
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('message-time').textContent = timeString;
+                
+                // Show notification
+                showCoachBotNotification();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error refreshing CoachBot message:', error);
+            document.getElementById('coachbot-typing').style.display = 'none';
+            document.getElementById('coachbot-message').style.display = 'block';
+        });
+}
+
+// Simulate CoachBot interaction on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CoachBot in maximized state
+    const body = document.getElementById('coachbot-body');
+    const icon = document.getElementById('coachbot-toggle-icon');
+    const widget = document.getElementById('coachbot-widget');
+    
+    // Set initial state as maximized
+    body.style.display = 'block';
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
+    widget.classList.remove('minimized');
+    
+    // Show typing indicator and then message
+    setTimeout(() => {
+        document.getElementById('coachbot-typing').style.display = 'block';
+        setTimeout(() => {
+            simulateCoachBotMessage();
+        }, 2000);
+    }, 1000);
+});
+</script>
+
+<style>
+/* Celebration animations */
+.celebration-animation {
+    position: relative;
+    height: 100px;
+    overflow: hidden;
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffa726);
+    animation: confetti-fall 3s infinite;
+}
+
+.confetti:nth-child(1) {
+    left: 10%;
+    animation-delay: 0s;
+    background: #ff6b6b;
+}
+
+.confetti:nth-child(2) {
+    left: 30%;
+    animation-delay: 0.5s;
+    background: #4ecdc4;
+}
+
+.confetti:nth-child(3) {
+    left: 50%;
+    animation-delay: 1s;
+    background: #45b7d1;
+}
+
+.confetti:nth-child(4) {
+    left: 70%;
+    animation-delay: 1.5s;
+    background: #96ceb4;
+}
+
+.confetti:nth-child(5) {
+    left: 90%;
+    animation-delay: 2s;
+    background: #ffa726;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.celebration-emojis {
+    font-size: 2rem;
+    margin: 1rem 0;
+}
+
+.celebration-emoji {
+    display: inline-block;
+    margin: 0 0.5rem;
+    animation: bounce 1s infinite;
+}
+
+.celebration-emoji:nth-child(1) { animation-delay: 0s; }
+.celebration-emoji:nth-child(2) { animation-delay: 0.2s; }
+.celebration-emoji:nth-child(3) { animation-delay: 0.4s; }
+.celebration-emoji:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Water bottle animation */
+.water-bottle {
+    position: relative;
+    width: 80px;
+    height: 120px;
+    margin: 0 auto;
+    border: 3px solid #007bff;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.water-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, #007bff, #17a2b8);
+    transition: height 0.8s ease;
+    border-radius: 0 0 17px 17px;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    color: #333;
+    z-index: 10;
+}
+
+/* CoachBot widget styles */
+.coachbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    max-width: 100%;
+    border: 1px solid #007bff;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.coachbot-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background: #007bff;
+    color: #fff;
+    cursor: pointer;
+}
+
+.coachbot-avatar {
+    font-size: 1.5rem;
+    margin-right: 10px;
+}
+
+.coachbot-info {
+    flex-grow: 1;
+}
+
+.coachbot-name {
+    font-weight: bold;
+}
+
+.coachbot-status {
+    font-size: 0.9rem;
+}
+
+.coachbot-toggle {
+    font-size: 1.2rem;
+}
+
+.coachbot-body {
+    display: none;
+    padding: 15px;
+    border-top: 1px solid #007bff;
+}
+
+.coachbot-typing {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* CoachBot Floating Widget Styles */
+.coachbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    max-width: 90vw;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e0e0e0;
+    z-index: 1000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.coachbot-container.minimized {
+    transform: translateY(calc(100% - 60px));
+}
+
+.coachbot-container .coachbot-body {
+    display: block; /* Default to visible */
+}
+
+.coachbot-container.has-notification {
+    animation: coachbot-pulse 2s infinite;
+}
+
+.coachbot-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 12px 50px 12px 15px;
+    border-radius: 15px 15px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.coachbot-avatar {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1.1rem;
+}
+
+.coachbot-info {
+    flex: 1;
+}
+
+.coachbot-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: block;
+}
+
+.coachbot-status {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    display: block;
+}
+
+.coachbot-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+}
+
+.coachbot-body {
+    padding: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: #fafafa;
+}
+
+.coachbot-typing {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.typing-indicator span {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin-right: 3px;
+    background: #007bff;
+    border-radius: 50%;
+    animation: typing-blink 1.5s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@keyframes typing-blink {
+    0%, 60%, 100% {
+        opacity: 0.3;
+    }
+    30% {
+        opacity: 1;
+    }
+}
+
+@keyframes coachbot-pulse {
+    0%, 100% {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }
+}
+
+.coachbot-message {
+    margin-bottom: 10px;
+    animation: message-appear 0.5s ease;
+}
+
+@keyframes message-appear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-content {
+    background: white;
+    padding: 12px 15px;
+    border-radius: 12px;
+    position: relative;
+    border: 1px solid #e9ecef;
+    line-height: 1.4;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.message-content:before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 6px solid white;
+}
+
+.message-meta {
+    margin-top: 8px;
+    text-align: left;
+    font-size: 0.75rem;
+}
+
+.message-meta .badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+}
+
+.coachbot-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+}
+
+.coachbot-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .coachbot-container {
+        width: 300px;
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .coachbot-header {
+        padding: 10px 45px 10px 12px;
+    }
+    
+    .coachbot-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+    }
+    
+    .coachbot-name {
+        font-size: 0.9rem;
+    }
+    
+    .coachbot-status {
+        font-size: 0.75rem;
+    }
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-right: 5px;
+}
+
+.typing-indicator span {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin-right: 3px;
+    background: #007bff;
+    border-radius: 50%;
+    animation: typing-blink 1.5s infinite;
+}
+
+@keyframes typing-blink {
+    0%, 100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.coachbot-message {
+    margin-bottom: 10px;
+}
+
+.message-content {
+    background: #f1f1f1;
+    padding: 10px;
+    border-radius: 10px;
+    position: relative;
+}
+
+.message-content:after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: -5px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-right: 10px solid #f1f1f1;
+}
+
+.message-meta {
+    margin-top: 5px;
+    text-align: right;
+}
+
+.coachbot-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
